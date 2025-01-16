@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "gm-resource-modifier"
+version = "0.1.0"
+description = ""
+authors = ["jonas.schrage <119843859+joschrag@users.noreply.github.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pathlib = "^1.0.1"
+pyyaml = "^6.0.2"
+pillow = "^11.1.0"
+numpy = "^2.2.1"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.2"
+black = "^24.4.2"
+mypy = "^1.10.0"
+isort = "^5.13.2"
+ipykernel = "^6.29.4"
+flake8 = "^7.0.0"
+pre-commit = "^3.7.1"
+pytest-cov = "^5.0.0"
+pydocstyle = "^6.3.0"
+flake8-bugbear = "^24.12.12"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 119
+
+[tool.isort]
+profile="black"
