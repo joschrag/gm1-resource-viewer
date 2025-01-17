@@ -6,6 +6,8 @@ authors = ["jonas.schrage <119843859+joschrag@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
 
+packages = [    { include = "gm1_resource_viewer", from = "src" },]
+
 [tool.poetry.dependencies]
 python = "^3.12"
 pathlib = "^1.0.1"
