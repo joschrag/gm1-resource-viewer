@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "gm-resource-modifier"
 version = "0.1.0"
-description = ""
+description = "A python package to decode .tgx and .gm1 image files."
 authors = ["jonas.schrage <119843859+joschrag@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
