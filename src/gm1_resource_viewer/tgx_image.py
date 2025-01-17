@@ -1,5 +1,6 @@
 """Classes for .tgx images and their file header."""
 
+import pathlib
 import struct
 from dataclasses import dataclass
 
@@ -107,5 +108,17 @@ def decode_tgx_data(array: bytes) -> Image.Image:
     tgx_image.bitmap = gm1_byte_array_to_img(
         bytearray(tgx_image.img_byte_array), tgx_image.tgx_width, tgx_image.tgx_height
     )
-
     return tgx_image.bitmap
+
+
+def decode_tgx_file(file_path: pathlib.Path) -> Image.Image:
+    """Decode a .tgx file from a file path into a PIL image.
+
+    Args:
+        array (pathlib.Path): .tgx file patg
+
+    Returns:
+        Image.Image: PIL image
+    """
+    image = decode_tgx_data(file_path.read_bytes())
+    return image
