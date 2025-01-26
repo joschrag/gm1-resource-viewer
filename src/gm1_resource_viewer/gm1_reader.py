@@ -6,6 +6,9 @@ import struct
 from dataclasses import dataclass
 from enum import Enum
 
+import numpy as np
+from PIL import Image
+
 from .color_converter import gm1_byte_array_to_img
 from .palette import Palette
 from .tgx_image import TGXImage, TGXImageHeader
@@ -334,3 +337,41 @@ class GM1_Reader:
             )
 
         self.actual_pos += self.gm_header.number_of_pictures_in_file * 4
+
+    def create_bigimage(self, max_rows: int = 0, max_cols: int = 0) -> Image.Image:
+        """Create an image with a grid of the decoded images.
+
+        Args:
+            max_rows (int, optional): maximum number of rows. Defaults to 0.
+            max_cols (int, optional): maximum number of columns. Defaults to 0.
+
+        Returns:
+            Image.Image: decoded image grid
+        """
+        num_pics = self.gm_header.number_of_pictures_in_file
+        img_list = self.tgx_images + self.tiles_image
+
+        if max_rows > 0:
+            max_cols = np.ceil(len(img_list) / max_rows).astype(np.int64)
+        elif max_cols > 0:
+            max_rows = np.ceil(len(img_list) / max_cols).astype(np.int64)
+        else:
+            max_rows = max_cols = np.ceil(np.sqrt(num_pics)).astype(np.int64)
+
+        sizes = np.array([img.bitmap.size for img in img_list])
+        if sizes.shape[0] < max_rows * max_cols:
+            sizes = np.concat([sizes, np.zeros((max_rows * max_cols - sizes.shape[0], 2))])
+        sizes = np.reshape(sizes, (max_rows, max_cols, 2))
+        y_offset = np.concatenate([np.zeros(1), np.cumsum(np.max(sizes[:, :, 0], 1))]).astype(np.int64)
+        x_offset = np.concatenate([np.zeros(1), np.cumsum(np.max(sizes[:, :, 1], 0))]).astype(np.int64)
+        new_im = Image.new(
+            "RGB",
+            (x_offset[-1], y_offset[-1]),
+        )
+        for y in range(max_rows):
+            for x in range(max_cols):
+                if y * max_cols + x < num_pics:
+                    new_im.paste(img_list[y * max_cols + x].bitmap, (x_offset[x], y_offset[y]))
+                else:
+                    break
+        return new_im
