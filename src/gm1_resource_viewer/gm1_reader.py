@@ -262,7 +262,7 @@ class GM1_Reader:
         half_reached = False
         parts_before = 0
 
-        for i, tgx_image in enumerate(self.tgx_images):
+        for tgx_image in self.tgx_images:
             if tgx_image.tgx_header.image_part == 0:
                 width = get_diamond_width(tgx_image.tgx_header.sub_parts)
                 parts_before += tgx_image.tgx_header.sub_parts
