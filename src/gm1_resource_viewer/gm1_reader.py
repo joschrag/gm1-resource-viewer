@@ -1,6 +1,7 @@
 """This module contains the main class for reading gm1 files."""
 
 import logging
+import os
 import pathlib
 import struct
 from dataclasses import dataclass
@@ -375,3 +376,24 @@ class GM1_Reader:
                 else:
                     break
         return new_im
+
+    def show_image(self, max_rows: int = 0, max_cols: int = 0) -> None:
+        """Display a decoded .gm1 file as a bigimage.
+
+        Args:
+            max_rows (int, optional): maximum number of rows. Defaults to 0.
+            max_cols (int, optional): maximum number of columns. Defaults to 0.
+        """
+        image = self.create_bigimage(max_rows, max_cols)
+        image.show()
+
+    def to_file(self, file_path: str | os.PathLike, max_rows: int = 0, max_cols: int = 0) -> None:
+        """Save the decoded bigimage to a file.
+
+        Args:
+            file_path (str | os.PathLike): filepath to save image to
+            max_rows (int, optional): maximum number of rows. Defaults to 0.
+            max_cols (int, optional): maximum number of columns. Defaults to 0.
+        """
+        big_img = self.create_bigimage(max_rows, max_cols)
+        big_img.save(file_path)
