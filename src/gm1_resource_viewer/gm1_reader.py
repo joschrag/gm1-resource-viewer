@@ -145,13 +145,13 @@ class GM1FileHeader:
 class GM1_Reader:
     """Class to read gm1 files."""
 
-    def __init__(self, file_path: pathlib.Path) -> None:
+    def __init__(self, file_path: str | os.PathLike) -> None:
         """Instantiate GM1 Reader class.
 
         Args:
-            file_path (pathlib.Path): path to .gm1 file
+            file_path ( str | os.PathLike): path to .gm1 file
         """
-        self.gm_header = GM1FileHeader.from_file(file_path)
+        self.gm_header = GM1FileHeader.from_file(pathlib.Path(file_path))
         self.palette: Palette | None = None
         with open(file_path, "rb") as file:
             content = file.read()
