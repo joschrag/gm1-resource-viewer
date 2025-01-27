@@ -397,3 +397,17 @@ class GM1_Reader:
         """
         big_img = self.create_bigimage(max_rows, max_cols)
         big_img.save(file_path)
+
+    def sub_images_to_file(self, file_path: str | os.PathLike, suffix: str = "png") -> None:
+        """Save all subimages into a given directory path.
+
+        Args:
+            file_path (str | os.PathLike): directory path
+            suffix (str, optional): file format to save to. Defaults to "png".
+        """
+        path = pathlib.Path(file_path)
+        if not path.exists():
+            path.mkdir(parents=True)
+        images = self.tgx_images + self.tiles_image
+        for i, img in enumerate(images):
+            img.bitmap.save(path / f"{i}.{suffix.strip('.')}")
