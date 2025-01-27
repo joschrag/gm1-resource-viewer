@@ -387,14 +387,18 @@ class GM1_Reader:
         image = self.create_bigimage(max_rows, max_cols)
         image.show()
 
-    def to_file(self, file_path: str | os.PathLike, max_rows: int = 0, max_cols: int = 0) -> None:
+    def to_file(self, file_path: str | os.PathLike, max_rows: int = 0, max_cols: int = 0, suffix: str = "png") -> None:
         """Save the decoded bigimage to a file.
 
         Args:
             file_path (str | os.PathLike): filepath to save image to
             max_rows (int, optional): maximum number of rows. Defaults to 0.
             max_cols (int, optional): maximum number of columns. Defaults to 0.
+            suffix (str, optional): file format to save to. Defaults to "png".
         """
+        file_path = pathlib.Path(file_path)
+        if not file_path.suffix:
+            file_path = file_path.with_suffix(f".{suffix}" if not suffix.startswith(".") else suffix)
         big_img = self.create_bigimage(max_rows, max_cols)
         big_img.save(file_path)
 
@@ -405,9 +409,11 @@ class GM1_Reader:
             file_path (str | os.PathLike): directory path
             suffix (str, optional): file format to save to. Defaults to "png".
         """
-        path = pathlib.Path(file_path)
-        if not path.exists():
-            path.mkdir(parents=True)
+        file_path = pathlib.Path(file_path)
+        if not file_path.suffix:
+            file_path = file_path.with_suffix(f".{suffix}" if not suffix.startswith(".") else suffix)
+        if not file_path.exists():
+            file_path.mkdir(parents=True)
         images = self.tgx_images + self.tiles_image
         for i, img in enumerate(images):
-            img.bitmap.save(path / f"{i}.{suffix.strip('.')}")
+            img.bitmap.save(file_path)

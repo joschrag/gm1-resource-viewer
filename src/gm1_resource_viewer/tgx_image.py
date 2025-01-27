@@ -136,5 +136,7 @@ def decode_tgx_to_file(in_path: str | os.PathLike, out_path: str | os.PathLike, 
     """
     in_path = pathlib.Path(in_path)
     out_path = pathlib.Path(out_path)
+    if not out_path.suffix:
+        out_path = out_path.with_suffix(f".{suffix}" if not suffix.startswith(".") else suffix)
     image = decode_tgx_data(in_path.read_bytes())
-    image.save(out_path.with_suffix(suffix))
+    image.save(out_path)
