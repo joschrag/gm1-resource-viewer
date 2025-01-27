@@ -16,5 +16,5 @@ def test_decode_tgx_data(filename: str) -> None:
 @pytest.mark.parametrize("filename", ["armys1.tgx", "armys10.tgx"])
 def test_decode_tgx_file(filename: str) -> None:
     file_path = pathlib.Path.cwd() / "tests" / "tgx" / filename
-    img = gm1_rv.decode_tgx_file(file_path)
+    img = gm1_rv.decode_tgx(file_path)
     assert isinstance(img, Image.Image)

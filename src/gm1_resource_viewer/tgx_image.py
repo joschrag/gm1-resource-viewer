@@ -112,7 +112,7 @@ def decode_tgx_data(array: bytes) -> Image.Image:
     return tgx_image.bitmap
 
 
-def decode_tgx_file(file_path: str | os.PathLike) -> Image.Image:
+def decode_tgx(file_path: str | os.PathLike) -> Image.Image:
     """Decode a .tgx file from a file path into a PIL image.
 
     Args:
