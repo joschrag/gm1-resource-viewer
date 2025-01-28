@@ -126,17 +126,14 @@ def decode_tgx(file_path: str | os.PathLike) -> Image.Image:
     return image
 
 
-def decode_tgx_to_file(in_path: str | os.PathLike, out_path: str | os.PathLike, suffix: str = "png") -> None:
+def decode_tgx_to_file(in_path: str | os.PathLike, out_path: str | os.PathLike) -> None:
     """Decode a tgx file into an image at 'out_path.suffix'.
 
     Args:
         in_path (str | os.PathLike): .tgx file to decode
         out_path (str | os.PathLike): path to save the file to
-        suffix (str, optional): file format to save to. Defaults to "png".
     """
     in_path = pathlib.Path(in_path)
     out_path = pathlib.Path(out_path)
-    if not out_path.suffix:
-        out_path = out_path.with_suffix(f".{suffix}" if not suffix.startswith(".") else suffix)
     image = decode_tgx_data(in_path.read_bytes())
-    image.save(out_path)
+    image.save(out_path.with_suffix(".png"))
