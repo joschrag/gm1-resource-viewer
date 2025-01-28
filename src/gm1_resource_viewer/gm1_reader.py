@@ -11,6 +11,7 @@ import numpy as np
 from PIL import Image
 
 from .color_converter import gm1_byte_array_to_img
+from .gm_no_compression import get_bitmap
 from .palette import Palette
 from .tgx_image import TGXImage, TGXImageHeader
 from .tile_image import TilesImage
@@ -181,7 +182,7 @@ class GM1_Reader:
                 GM1_Datatype.No_Compression,
                 GM1_Datatype.No_Compression1,
             ]:
-                pass  # self.create_no_compression_images(self.content)
+                self.create_no_compression_images(self.content)
             elif GM1_Datatype(self.gm_header.data_type) == GM1_Datatype.TilesObject:
                 self.create_tile_image(self.content)
             else:
@@ -231,7 +232,7 @@ class GM1_Reader:
             img_data = array[arr_start : arr_start + tgx_image.size_in_byte_array]
             tgx_image.img_byte_array = img_data
 
-    def create_images(self, array):
+    def create_images(self, array: bytes):
         """Creates images from the provided byte array."""
         self.create_offset_and_size_in_byte_array_list(array)
         self.create_img_header(array)
@@ -248,7 +249,7 @@ class GM1_Reader:
                 self.palette.color_tables[self.palette.actual_palette] if self.palette else None,
             )
 
-    def create_tile_image(self, byte_array):
+    def create_tile_image(self, byte_array: bytes):
         """Create tile images from the provided byte array."""
         self.create_offset_and_size_in_byte_array_list(byte_array)
         self.create_img_header(byte_array)
@@ -318,6 +319,19 @@ class GM1_Reader:
         for image in self.tiles_image:
             image.create_image_from_list()
         self.tgx_images = []
+
+    def create_no_compression_images(self, byte_array: bytes):
+        """Create no compression images from the provided byte array.
+
+        Args:
+            byte_array (bytes): file contents
+        """
+        self.create_offset_and_size_in_byte_array_list(byte_array)
+        self.create_img_header(byte_array)
+        for tgx_image in self.tgx_images:
+            tgx_image.bitmap = get_bitmap(
+                tgx_image.img_byte_array, tgx_image.tgx_header.width, tgx_image.tgx_header.height
+            )
 
     def create_offset_and_size_in_byte_array_list(self, byte_array):
         """Creates the offset and size information for each image in the byte array."""
