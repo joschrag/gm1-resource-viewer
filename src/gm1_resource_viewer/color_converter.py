@@ -51,7 +51,7 @@ def argb1555_to_rgba8888(color: int) -> int:
     Returns:
         int: A 32-bit integer representing the RGBA8888 color.
     """
-    r, g, b, a = decode_argb1555(color)
+    r, g, b, a = map(int, decode_argb1555(color))
     return r | (g << 8) | (b << 16) | (a << 24)
 
 

@@ -1,12 +1,17 @@
 """This module contains the main class for reading gm1 files."""
 
 import logging
+import os
 import pathlib
 import struct
 from dataclasses import dataclass
 from enum import Enum
 
+import numpy as np
+from PIL import Image
+
 from .color_converter import gm1_byte_array_to_img
+from .gm_no_compression import get_bitmap
 from .palette import Palette
 from .tgx_image import TGXImage, TGXImageHeader
 from .tile_image import TilesImage
@@ -141,13 +146,13 @@ class GM1FileHeader:
 class GM1_Reader:
     """Class to read gm1 files."""
 
-    def __init__(self, file_path: pathlib.Path) -> None:
+    def __init__(self, file_path: str | os.PathLike) -> None:
         """Instantiate GM1 Reader class.
 
         Args:
-            file_path (pathlib.Path): path to .gm1 file
+            file_path ( str | os.PathLike): path to .gm1 file
         """
-        self.gm_header = GM1FileHeader.from_file(file_path)
+        self.gm_header = GM1FileHeader.from_file(pathlib.Path(file_path))
         self.palette: Palette | None = None
         with open(file_path, "rb") as file:
             content = file.read()
@@ -177,7 +182,7 @@ class GM1_Reader:
                 GM1_Datatype.No_Compression,
                 GM1_Datatype.No_Compression1,
             ]:
-                pass  # self.create_no_compression_images(self.content)
+                self.create_no_compression_images(self.content)
             elif GM1_Datatype(self.gm_header.data_type) == GM1_Datatype.TilesObject:
                 self.create_tile_image(self.content)
             else:
@@ -227,7 +232,7 @@ class GM1_Reader:
             img_data = array[arr_start : arr_start + tgx_image.size_in_byte_array]
             tgx_image.img_byte_array = img_data
 
-    def create_images(self, array):
+    def create_images(self, array: bytes):
         """Creates images from the provided byte array."""
         self.create_offset_and_size_in_byte_array_list(array)
         self.create_img_header(array)
@@ -244,7 +249,7 @@ class GM1_Reader:
                 self.palette.color_tables[self.palette.actual_palette] if self.palette else None,
             )
 
-    def create_tile_image(self, byte_array):
+    def create_tile_image(self, byte_array: bytes):
         """Create tile images from the provided byte array."""
         self.create_offset_and_size_in_byte_array_list(byte_array)
         self.create_img_header(byte_array)
@@ -259,7 +264,7 @@ class GM1_Reader:
         half_reached = False
         parts_before = 0
 
-        for i, tgx_image in enumerate(self.tgx_images):
+        for tgx_image in self.tgx_images:
             if tgx_image.tgx_header.image_part == 0:
                 width = get_diamond_width(tgx_image.tgx_header.sub_parts)
                 parts_before += tgx_image.tgx_header.sub_parts
@@ -315,6 +320,19 @@ class GM1_Reader:
             image.create_image_from_list()
         self.tgx_images = []
 
+    def create_no_compression_images(self, byte_array: bytes):
+        """Create no compression images from the provided byte array.
+
+        Args:
+            byte_array (bytes): file contents
+        """
+        self.create_offset_and_size_in_byte_array_list(byte_array)
+        self.create_img_header(byte_array)
+        for tgx_image in self.tgx_images:
+            tgx_image.bitmap = get_bitmap(
+                tgx_image.img_byte_array, tgx_image.tgx_header.width, tgx_image.tgx_header.height
+            )
+
     def create_offset_and_size_in_byte_array_list(self, byte_array):
         """Creates the offset and size information for each image in the byte array."""
         # Step 1: Read the offsets
@@ -334,3 +352,76 @@ class GM1_Reader:
             )
 
         self.actual_pos += self.gm_header.number_of_pictures_in_file * 4
+
+    def create_bigimage(self, max_rows: int = 0, max_cols: int = 0) -> Image.Image:
+        """Create an image with a grid of the decoded images.
+
+        Args:
+            max_rows (int, optional): maximum number of rows. Defaults to 0.
+            max_cols (int, optional): maximum number of columns. Defaults to 0.
+
+        Returns:
+            Image.Image: decoded image grid
+        """
+        num_pics = self.gm_header.number_of_pictures_in_file
+        img_list = self.tgx_images + self.tiles_image
+
+        if max_rows > 0:
+            max_cols = np.ceil(len(img_list) / max_rows).astype(np.int64)
+        elif max_cols > 0:
+            max_rows = np.ceil(len(img_list) / max_cols).astype(np.int64)
+        else:
+            max_rows = max_cols = np.ceil(np.sqrt(num_pics)).astype(np.int64)
+
+        sizes = np.array([img.bitmap.size for img in img_list])
+        if sizes.shape[0] < max_rows * max_cols:
+            sizes = np.concat([sizes, np.zeros((max_rows * max_cols - sizes.shape[0], 2))])
+        sizes = np.reshape(sizes, (max_rows, max_cols, 2))
+        y_offset = np.concatenate([np.zeros(1), np.cumsum(np.max(sizes[:, :, 0], 1))]).astype(np.int64)
+        x_offset = np.concatenate([np.zeros(1), np.cumsum(np.max(sizes[:, :, 1], 0))]).astype(np.int64)
+        new_im = Image.new(
+            "RGB",
+            (x_offset[-1], y_offset[-1]),
+        )
+        for y in range(max_rows):
+            for x in range(max_cols):
+                if y * max_cols + x < num_pics:
+                    new_im.paste(img_list[y * max_cols + x].bitmap, (x_offset[x], y_offset[y]))
+                else:
+                    break
+        return new_im
+
+    def show_image(self, max_rows: int = 0, max_cols: int = 0) -> None:
+        """Display a decoded .gm1 file as a bigimage.
+
+        Args:
+            max_rows (int, optional): maximum number of rows. Defaults to 0.
+            max_cols (int, optional): maximum number of columns. Defaults to 0.
+        """
+        image = self.create_bigimage(max_rows, max_cols)
+        image.show()
+
+    def to_file(self, file_path: str | os.PathLike, max_rows: int = 0, max_cols: int = 0) -> None:
+        """Save the decoded bigimage to a file.
+
+        Args:
+            file_path (str | os.PathLike): filepath to save image to
+            max_rows (int, optional): maximum number of rows. Defaults to 0.
+            max_cols (int, optional): maximum number of columns. Defaults to 0.
+        """
+        file_path = pathlib.Path(file_path)
+        big_img = self.create_bigimage(max_rows, max_cols)
+        big_img.save(file_path.with_suffix(".png"))
+
+    def sub_images_to_file(self, file_path: str | os.PathLike) -> None:
+        """Save all subimages into a given directory path.
+
+        Args:
+            file_path (str | os.PathLike): directory path
+        """
+        file_path = pathlib.Path(file_path)
+        if not file_path.exists():
+            file_path.mkdir(parents=True)
+        images = self.tgx_images + self.tiles_image
+        for i, img in enumerate(images):
+            img.bitmap.save(f"{file_path.with_suffix('')}{i}.png")
